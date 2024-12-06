@@ -2,6 +2,7 @@ const Table = require("../models/tableModel");
 const Food = require("../models/foodModel");
 const Order = require("../models/orderModel");
 const Bill = require("../models/billModel");
+const mongoose = require("mongoose");
 
 const createTable = async (req, res) => {
   try {
@@ -27,12 +28,6 @@ const createFood = async (req, res) => {
   try {
     const { name, category, price, popularity } = req.body;
 
-    if (popularity < 0) {
-      return res
-        .status(400)
-        .json({ message: "Popularity must be a non-negative value." });
-    }
-
     const food = await Food.create({ name, category, price, popularity });
     return res
       .status(201)
@@ -44,19 +39,35 @@ const createFood = async (req, res) => {
   }
 };
 
+const getAllFood = async (req, res) => {
+  try {
+    const foodItems = await Food.find();
+
+    if (foodItems.length === 0) {
+      return res.status(404).json({ message: "No food items found." });
+    }
+
+    return res
+      .status(200)
+      .json({ message: "All food items retrieved successfully", foodItems });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Failed to retrieve food items", error: error.message });
+  }
+};
+
 const updateFood = async (req, res) => {
   try {
     const { foodId } = req.params;
     const { name, category, price, popularity } = req.body;
 
-    if (popularity < 0) {
-      return res
-        .status(400)
-        .json({ message: "Popularity must be a non-negative value." });
+    if (!mongoose.isValidObjectId(foodId)) {
+      return res.status(400).json({ message: "Invalid food ID." });
     }
 
     const food = await Food.findOneAndUpdate(
-      {_id: foodId},
+      { _id: foodId },
       { name, category, price, popularity },
       { new: true }
     );
@@ -78,7 +89,12 @@ const updateFood = async (req, res) => {
 const deleteFood = async (req, res) => {
   try {
     const { foodId } = req.params;
-    const food = await Food.findByIdAndDelete(foodId);
+
+    if (!mongoose.isValidObjectId(foodId)) {
+      return res.status(400).json({ message: "Invalid food ID." });
+    }
+
+    const food = await Food.findOneAndDelete({ _id: foodId });
 
     if (!food) {
       return res.status(404).json({ message: "Food item not found." });
@@ -97,12 +113,16 @@ const manageOrder = async (req, res) => {
     const { orderId } = req.params;
     const { status } = req.body;
 
+    if (!mongoose.isValidObjectId(orderId)) {
+      return res.status(400).json({ message: "Invalid order ID." });
+    }
+
     if (!["accepted", "rejected"].includes(status)) {
       return res.status(400).json({ message: "Invalid status." });
     }
 
-    const order = await Order.findByIdAndUpdate(
-      orderId,
+    const order = await Order.findOneAndUpdate(
+      { _id: orderId },
       { status },
       { new: true }
     );
@@ -123,9 +143,7 @@ const manageOrder = async (req, res) => {
       });
     }
 
-    return res
-      .status(200)
-      .json({ message: `Order ${status}`, order });
+    return res.status(200).json({ message: `Order ${status}`, order });
   } catch (error) {
     return res
       .status(500)
@@ -133,10 +151,14 @@ const manageOrder = async (req, res) => {
   }
 };
 
-// View a particular bill
 const getBillById = async (req, res) => {
   try {
     const { billId } = req.params;
+
+    if (!mongoose.isValidObjectId(billId)) {
+      return res.status(400).json({ message: "Invalid bill ID." });
+    }
+
     const bill = await Bill.findById(billId).populate("orderId");
 
     if (!bill) {
@@ -153,10 +175,14 @@ const getBillById = async (req, res) => {
   }
 };
 
-// View all generated bills
 const getAllBills = async (req, res) => {
   try {
     const bills = await Bill.find().populate("orderId");
+
+    if (bills.length === 0) {
+      return res.status(404).json({ message: "No bills found." });
+    }
+
     return res
       .status(200)
       .json({ message: "All bills retrieved successfully", bills });
@@ -170,6 +196,7 @@ const getAllBills = async (req, res) => {
 module.exports = {
   createTable,
   createFood,
+  getAllFood,
   updateFood,
   deleteFood,
   manageOrder,

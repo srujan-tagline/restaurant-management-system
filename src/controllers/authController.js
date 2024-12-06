@@ -87,7 +87,7 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const token = generateToken({ email }, "1d");
+    const token = generateToken({ email: email, id: user._id }, "1d");
     return res.status(200).json({ message: "Login successful", token });
   } catch (error) {
     return res
@@ -136,7 +136,7 @@ const googleCallback = async (req, res) => {
   try {
     const user = req.user;
 
-    const token = generateToken({ email: user.email }, "1d");
+    const token = generateToken({ email: user.email, id: user._id }, "1d");
     return res
       .status(200)
       .json({ message: "Google authentication successful", token });
@@ -146,6 +146,6 @@ const googleCallback = async (req, res) => {
       error: error.message,
     });
   }
-};  
+};
 
 module.exports = { signup, login, verifyOTP, googleCallback };
