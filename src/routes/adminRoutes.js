@@ -5,6 +5,7 @@ const {
 } = require("../middlewares/authMiddleware");
 const {
   createTable,
+  getTableById,
   createFood,
   getAllFood,
   updateFood,
@@ -29,6 +30,12 @@ router.post(
   authorizeRole(["admin"]),
   validate(createTableSchema),
   createTable
+);
+router.get(
+  "/table/:tableId",
+  authenticateUser,
+  authorizeRole(["admin"]),
+  getTableById
 );
 router.post(
   "/food",

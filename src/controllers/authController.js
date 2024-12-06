@@ -1,6 +1,10 @@
-const User = require("../models/userModel");
 const { generateToken, hashPassword } = require("../utils/common");
 const sendEmail = require("../utils/sendEmail");
+const {
+  findUserByEmail,
+  createUser,
+  saveUser,
+} = require("../services/userService");
 const { generateOTP, generateOTPExpiry } = require("../utils/otp");
 const bcrypt = require("bcryptjs");
 
@@ -8,7 +12,7 @@ const signup = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await findUserByEmail(email);
     if (existingUser) {
       if (!existingUser.isVerified) {
         const otp = generateOTP();
@@ -17,7 +21,7 @@ const signup = async (req, res) => {
         await sendEmail(email, "OTP Verification", `Your OTP is: ${otp}`);
         existingUser.otp = otp;
         existingUser.otpExpiresAt = otpExpiresAt;
-        await existingUser.save();
+        await saveUser(existingUser);
 
         return res.status(403).json({
           message: "Verification email sent. Please verify your self.",
@@ -33,7 +37,7 @@ const signup = async (req, res) => {
     const otp = generateOTP();
     const otpExpiresAt = generateOTPExpiry();
 
-    const newUser = await User.create({
+    const newUser = await createUser({
       name,
       email,
       password: hashedPassword,
@@ -59,7 +63,7 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await findUserByEmail(email);
     if (!user) {
       return res
         .status(404)
@@ -74,7 +78,7 @@ const login = async (req, res) => {
       await sendEmail(email, "OTP Verification", `Your OTP is: ${otp}`);
       user.otp = otp;
       user.otpExpiresAt = otpExpiresAt;
-      await user.save();
+      await saveUser(user);
 
       return res.status(403).json({
         message:
@@ -99,7 +103,7 @@ const login = async (req, res) => {
 const verifyOTP = async (req, res) => {
   const { email, otp } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const user = await findUserByEmail(email);
     if (!user) {
       return res.status(404).json({ message: "User is not found" });
     }
@@ -121,7 +125,7 @@ const verifyOTP = async (req, res) => {
     user.isVerified = true;
     user.otp = null;
     user.otpExpiresAt = null;
-    await user.save();
+    await saveUser(user);
 
     return res.status(200).json({ message: "User verified successfully" });
   } catch (error) {

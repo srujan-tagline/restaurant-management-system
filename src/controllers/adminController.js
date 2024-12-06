@@ -1,19 +1,33 @@
-const Table = require("../models/tableModel");
-const Food = require("../models/foodModel");
-const Order = require("../models/orderModel");
-const Bill = require("../models/billModel");
 const mongoose = require("mongoose");
+const {
+  findTableByNumber,
+  tableCreate,
+  findTableById,
+  updateTableCurrentOrder,
+} = require("../services/tableService");
+const {
+  foodCreate,
+  getFoods,
+  findFoodByIdAndUpdate,
+  findFoodByIdAndDelete,
+} = require("../services/foodService");
+const { findOrderByIdAndUpdate } = require("../services/orderService");
+const {
+  createBill,
+  findAllBills,
+  findBillById,
+} = require("../services/billService");
 
 const createTable = async (req, res) => {
   try {
     const { number } = req.body;
-    const existingTable = await Table.findOne({ number });
+    const existingTable = await findTableByNumber(number);
 
     if (existingTable) {
       return res.status(400).json({ message: "Table number already exists." });
     }
 
-    const table = await Table.create({ number });
+    const table = await tableCreate({ number });
     return res
       .status(201)
       .json({ message: "Table created successfully", table });
@@ -24,11 +38,32 @@ const createTable = async (req, res) => {
   }
 };
 
+const getTableById = async (req, res) => {
+  const { tableId } = req.params;
+
+  if (!mongoose.isValidObjectId(tableId)) {
+    return res.status(400).json({ message: "Invalid table ID." });
+  }
+
+  try {
+    const table = await findTableById(tableId);
+
+    if (!table) {
+      return res.status(404).json({ message: "Table not found" });
+    }
+
+    return res.status(200).json({ message: "Table details fetched", table });
+  } catch (error) {
+    console.error("Error fetching table:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 const createFood = async (req, res) => {
   try {
     const { name, category, price, popularity } = req.body;
 
-    const food = await Food.create({ name, category, price, popularity });
+    const food = await foodCreate({ name, category, price, popularity });
     return res
       .status(201)
       .json({ message: "Food item created successfully", food });
@@ -41,7 +76,7 @@ const createFood = async (req, res) => {
 
 const getAllFood = async (req, res) => {
   try {
-    const foodItems = await Food.find();
+    const foodItems = await getFoods();
 
     if (foodItems.length === 0) {
       return res.status(404).json({ message: "No food items found." });
@@ -66,11 +101,12 @@ const updateFood = async (req, res) => {
       return res.status(400).json({ message: "Invalid food ID." });
     }
 
-    const food = await Food.findOneAndUpdate(
-      { _id: foodId },
-      { name, category, price, popularity },
-      { new: true }
-    );
+    const food = await findFoodByIdAndUpdate(foodId, {
+      name,
+      category,
+      price,
+      popularity,
+    });
 
     if (!food) {
       return res.status(404).json({ message: "Food item not found." });
@@ -94,7 +130,7 @@ const deleteFood = async (req, res) => {
       return res.status(400).json({ message: "Invalid food ID." });
     }
 
-    const food = await Food.findOneAndDelete({ _id: foodId });
+    const food = await findFoodByIdAndDelete(foodId);
 
     if (!food) {
       return res.status(404).json({ message: "Food item not found." });
@@ -117,15 +153,7 @@ const manageOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid order ID." });
     }
 
-    if (!["accepted", "rejected"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status." });
-    }
-
-    const order = await Order.findOneAndUpdate(
-      { _id: orderId },
-      { status },
-      { new: true }
-    );
+    const order = await findOrderByIdAndUpdate(orderId, { status });
 
     if (!order) {
       return res.status(404).json({ message: "Order not found." });
@@ -136,13 +164,19 @@ const manageOrder = async (req, res) => {
         (total, item) => total + item.price * item.quantity,
         0
       );
-      await Bill.create({
+      await createBill({
         tableNumber: order.tableNumber,
         orderId: order._id,
         totalAmount: billAmount,
       });
+      await updateTableCurrentOrder(order.tableNumber, {
+        $unset: { currentOrder: "" },
+      });
+    } else if (status === "rejected") {
+      await updateTableCurrentOrder(order.tableNumber, {
+        $unset: { currentOrder: "" },
+      });
     }
-
     return res.status(200).json({ message: `Order ${status}`, order });
   } catch (error) {
     return res
@@ -159,7 +193,7 @@ const getBillById = async (req, res) => {
       return res.status(400).json({ message: "Invalid bill ID." });
     }
 
-    const bill = await Bill.findById(billId).populate("orderId");
+    const bill = await findBillById(billId);
 
     if (!bill) {
       return res.status(404).json({ message: "Bill not found." });
@@ -177,7 +211,7 @@ const getBillById = async (req, res) => {
 
 const getAllBills = async (req, res) => {
   try {
-    const bills = await Bill.find().populate("orderId");
+    const bills = await findAllBills();
 
     if (bills.length === 0) {
       return res.status(404).json({ message: "No bills found." });
@@ -195,6 +229,7 @@ const getAllBills = async (req, res) => {
 
 module.exports = {
   createTable,
+  getTableById,
   createFood,
   getAllFood,
   updateFood,

@@ -5,8 +5,13 @@ const orderSchema = new mongoose.Schema(
     tableNumber: { type: Number, required: true },
     items: [
       {
-        foodId: { type: mongoose.Schema.Types.ObjectId, ref: "Food" },
+        foodId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Food",
+          required: true,
+        },
         quantity: { type: Number, required: true },
+        price: { type: Number },
       },
     ],
     status: {

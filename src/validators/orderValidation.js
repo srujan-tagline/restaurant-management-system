@@ -8,6 +8,20 @@ const manageOrderSchema = Joi.object({
   }),
 });
 
+const placeOrderSchema = Joi.object({
+  tableNumber: Joi.number().required(),
+  items: Joi.array()
+    .items(
+      Joi.object({
+        foodId: Joi.string().required(),
+        quantity: Joi.number().min(1).required(),
+      })
+    )
+    .min(1)
+    .required(),
+});
+
 module.exports = {
   manageOrderSchema,
+  placeOrderSchema
 };
