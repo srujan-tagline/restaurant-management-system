@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const {
+  incrementFoodPopularity,
   retrieveFoodByPopularity,
   retrieveFoodByCategory,
   findFoodByIds,
@@ -72,6 +73,10 @@ const placeOrder = async (req, res) => {
 
     // Update the current order in the table schema
     await updateTableWithOrder(table._id, order._id);
+
+    for (const item of items) {
+      await incrementFoodPopularity(item.foodId, item.quantity);
+    }
 
     return res
       .status(201)

@@ -12,6 +12,12 @@ const findFoodByIdAndUpdate = async (foodId, update) => {
   return await Food.findOneAndUpdate({ _id: foodId }, update, { new: true });
 };
 
+const incrementFoodPopularity = async (foodId, quantity) => {
+  return await Food.findByIdAndUpdate(foodId, {
+    $inc: { popularity: quantity },
+  });
+};
+
 const findFoodByIdAndDelete = async (foodId) => {
   return await Food.findOneAndDelete({ _id: foodId });
 };
@@ -45,8 +51,9 @@ module.exports = {
   foodCreate,
   getFoods,
   findFoodByIdAndUpdate,
+  incrementFoodPopularity,
   findFoodByIdAndDelete,
   retrieveFoodByPopularity,
   retrieveFoodByCategory,
-  findFoodByIds
+  findFoodByIds,
 };

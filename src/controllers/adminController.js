@@ -61,9 +61,9 @@ const getTableById = async (req, res) => {
 
 const createFood = async (req, res) => {
   try {
-    const { name, category, price, popularity } = req.body;
+    const { name, category, price } = req.body;
 
-    const food = await foodCreate({ name, category, price, popularity });
+    const food = await foodCreate({ name, category, price });
     return res
       .status(201)
       .json({ message: "Food item created successfully", food });
@@ -95,7 +95,7 @@ const getAllFood = async (req, res) => {
 const updateFood = async (req, res) => {
   try {
     const { foodId } = req.params;
-    const { name, category, price, popularity } = req.body;
+    const { name, category, price} = req.body;
 
     if (!mongoose.isValidObjectId(foodId)) {
       return res.status(400).json({ message: "Invalid food ID." });
@@ -104,8 +104,7 @@ const updateFood = async (req, res) => {
     const food = await findFoodByIdAndUpdate(foodId, {
       name,
       category,
-      price,
-      popularity,
+      price
     });
 
     if (!food) {

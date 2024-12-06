@@ -18,10 +18,10 @@ const createFoodSchema = Joi.object({
     "number.positive": "Price must be a positive value.",
     "any.required": "Price is required.",
   }),
-  popularity: Joi.number().integer().min(0).optional().messages({
+  popularity: Joi.number().integer().min(1).optional().messages({
     "number.base": "Popularity must be a number.",
     "number.integer": "Popularity must be an integer.",
-    "number.min": "Popularity must be at least 0.",
+    "number.min": "Popularity must be at least 1.",
   }),
 });
 
@@ -40,10 +40,10 @@ const updateFoodSchema = Joi.object({
     "number.base": "Price must be a number.",
     "number.positive": "Price must be a positive value.",
   }),
-  popularity: Joi.number().integer().min(0).optional().messages({
+  popularity: Joi.number().integer().min(1).optional().messages({
     "number.base": "Popularity must be a number.",
     "number.integer": "Popularity must be an integer.",
-    "number.min": "Popularity must be at least 0.",
+    "number.min": "Popularity must be at least 1.",
   }),
 });
 
