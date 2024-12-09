@@ -204,7 +204,8 @@ const googleCallback = async (req, res) => {
       true,
       res,
       statusCode.SUCCESS,
-      responseMessage.GOOGLE_AUTHENTICATION_SUCCESSFUL
+      responseMessage.GOOGLE_AUTHENTICATION_SUCCESSFUL,
+      token
     );
   } catch (error) {
     return response(
