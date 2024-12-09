@@ -1,3 +1,4 @@
+const { v4: uuidv4 } = require("uuid");
 const mongoose = require("mongoose");
 const {
   incrementFoodPopularity,
@@ -10,7 +11,12 @@ const {
   updateTableWithOrder,
 } = require("../services/tableService");
 const { createOrder } = require("../services/orderService");
-const { findBillByOrderId } = require("../services/billService");
+const {
+  findBillByOrderIdAndUserId,
+  findBillByOrderIdAndAnonymousToken,
+  findBillsByUserId,
+  findBillsByAnonymousToken,
+} = require("../services/billService");
 
 const getFoodByPopularity = async (req, res) => {
   try {
@@ -69,6 +75,58 @@ const placeOrder = async (req, res) => {
         quantity: item.quantity,
         price: foodItems.find((food) => food._id.equals(item.foodId)).price,
       })),
+      userId: req.user._id,
+    });
+
+    // Update the current order in the table schema
+    await updateTableWithOrder(table._id, order._id);
+
+    for (const item of items) {
+      await incrementFoodPopularity(item.foodId, item.quantity);
+    }
+
+    return res
+      .status(201)
+      .json({ message: "Order placed successfully", order });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Failed to place order", error: error.message });
+  }
+};
+
+const placeOrderWithoutLogin = async (req, res) => {
+  try {
+    const { tableNumber, items, anonymousToken } = req.body;
+    const existinganonymousToken = anonymousToken || uuidv4();
+
+    const table = await findTableByNumber(tableNumber);
+    if (!table) {
+      return res.status(404).json({ message: "Table is not found." });
+    }
+
+    if (table.currentOrder) {
+      return res
+        .status(400)
+        .json({ message: "Table already has a pending order." });
+    }
+
+    const foodItems = await findFoodByIds(items.map((item) => item.foodId));
+
+    if (foodItems.length !== items.length) {
+      return res
+        .status(400)
+        .json({ message: "Order contain invalid food items." });
+    }
+
+    const order = await createOrder({
+      tableNumber,
+      items: items.map((item) => ({
+        foodId: item.foodId,
+        quantity: item.quantity,
+        price: foodItems.find((food) => food._id.equals(item.foodId)).price,
+      })),
+      anonymousToken: existinganonymousToken,
     });
 
     // Update the current order in the table schema
@@ -91,12 +149,21 @@ const placeOrder = async (req, res) => {
 const getBillForOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
+    const { anonymousToken } = req.body;
+    const userId = req?.user?._id;
 
     if (!mongoose.isValidObjectId(orderId)) {
       return res.status(400).json({ message: "Invalid order ID" });
     }
 
-    const bill = await findBillByOrderId(orderId);
+    if (userId) {
+      var bill = await findBillByOrderIdAndUserId(orderId, userId);
+    } else if (anonymousToken) {
+      var bill = await findBillByOrderIdAndAnonymousToken(
+        orderId,
+        anonymousToken
+      );
+    }
 
     if (!bill) {
       return res
@@ -114,9 +181,41 @@ const getBillForOrder = async (req, res) => {
   }
 };
 
+const getAllBills = async (req, res) => {
+  try {
+    const { anonymousToken } = req.body;
+    const userId = req?.user?._id;
+
+    if (userId) {
+      var bills = await findBillsByUserId(userId);
+    } else if (anonymousToken) {
+      var bills = await findBillsByAnonymousToken(anonymousToken);
+    }
+
+    if (!bills.length) {
+      return res.status(404).json({ message: "No bills found for this user" });
+    }
+
+    const totalAmount = bills.reduce((sum, bill) => sum + bill.totalAmount, 0);
+
+    res.status(200).json({
+      message: "User's bills retrieved successfully",
+      totalAmount,
+      bills,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving bills",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getFoodByPopularity,
   getFoodByCategory,
   placeOrder,
+  placeOrderWithoutLogin,
   getBillForOrder,
+  getAllBills,
 };

@@ -1,50 +1,82 @@
 const Food = require("../models/foodModel");
 
 const foodCreate = async (data) => {
-  return await Food.create(data);
+  try {
+    return await Food.create(data);
+  } catch (error) {
+    return null;
+  }
 };
 
 const getFoods = async () => {
-  return await Food.find();
+  try {
+    return await Food.find();
+  } catch (error) {
+    return null;
+  }
 };
 
 const findFoodByIdAndUpdate = async (foodId, update) => {
-  return await Food.findOneAndUpdate({ _id: foodId }, update, { new: true });
+  try {
+    return await Food.findOneAndUpdate({ _id: foodId }, update, { new: true });
+  } catch (error) {
+    return null;
+  }
 };
 
 const incrementFoodPopularity = async (foodId, quantity) => {
-  return await Food.findByIdAndUpdate(foodId, {
-    $inc: { popularity: quantity },
-  });
+  try {
+    return await Food.findByIdAndUpdate(foodId, {
+      $inc: { popularity: quantity },
+    });
+  } catch (error) {
+    return null;
+  }
 };
 
 const findFoodByIdAndDelete = async (foodId) => {
-  return await Food.findOneAndDelete({ _id: foodId });
+  try {
+    return await Food.findOneAndDelete({ _id: foodId });
+  } catch (error) {
+    return null;
+  }
 };
 
 const retrieveFoodByPopularity = async () => {
-  return await Food.find().sort({ popularity: -1 });
+  try {
+    return await Food.find().sort({ popularity: -1 });
+  } catch (error) {
+    return null;
+  }
 };
 
 const retrieveFoodByCategory = async () => {
-  return await Food.aggregate([
-    {
-      $group: {
-        _id: "$category",
-        foods: {
-          $push: {
-            name: "$name",
-            price: "$price",
-            popularity: "$popularity",
+  try {
+    return await Food.aggregate([
+      {
+        $group: {
+          _id: "$category",
+          foods: {
+            $push: {
+              name: "$name",
+              price: "$price",
+              popularity: "$popularity",
+            },
           },
         },
       },
-    },
-  ]);
+    ]);
+  } catch (error) {
+    return null;
+  }
 };
 
 const findFoodByIds = async (foodIds) => {
-  return await Food.find({ _id: { $in: foodIds } });
+  try {
+    return await Food.find({ _id: { $in: foodIds } });
+  } catch (error) {
+    return null;
+  }
 };
 
 module.exports = {

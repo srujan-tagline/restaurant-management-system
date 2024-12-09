@@ -95,7 +95,7 @@ const getAllFood = async (req, res) => {
 const updateFood = async (req, res) => {
   try {
     const { foodId } = req.params;
-    const { name, category, price} = req.body;
+    const { name, category, price } = req.body;
 
     if (!mongoose.isValidObjectId(foodId)) {
       return res.status(400).json({ message: "Invalid food ID." });
@@ -104,7 +104,7 @@ const updateFood = async (req, res) => {
     const food = await findFoodByIdAndUpdate(foodId, {
       name,
       category,
-      price
+      price,
     });
 
     if (!food) {
@@ -159,14 +159,15 @@ const manageOrder = async (req, res) => {
     }
 
     if (status === "accepted") {
-      const billAmount = order.items.reduce(
-        (total, item) => total + item.price * item.quantity,
-        0
-      );
+      const billAmount = order.items
+        .reduce((total, item) => total + item.price * item.quantity, 0)
+        .toFixed(2);
       await createBill({
         tableNumber: order.tableNumber,
         orderId: order._id,
         totalAmount: billAmount,
+        userId: order.userId,
+        anonymousToken: order.anonymousToken,
       });
       await updateTableCurrentOrder(order.tableNumber, {
         $unset: { currentOrder: "" },

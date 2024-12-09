@@ -19,6 +19,8 @@ const orderSchema = new mongoose.Schema(
       enum: ["pending", "accepted", "rejected"],
       default: "pending",
     },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    anonymousToken: { type: String, default: null },
   },
   { timestamps: true }
 );
