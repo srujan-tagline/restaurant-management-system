@@ -3,7 +3,6 @@ const {
   getFoodByPopularity,
   getFoodByCategory,
   placeOrder,
-  placeOrderWithoutLogin,
   getBillForOrder,
   getAllBills,
 } = require("../controllers/userController");
@@ -47,14 +46,8 @@ router.get(
 router.get("/bills", authenticateUser, authorizeRole(["user"]), getAllBills);
 
 // without login routes
-router.post(
-  "/order-without-login",
-  validate(placeOrderSchema),
-  placeOrderWithoutLogin
-);
+router.post("/order-without-login", validate(placeOrderSchema), placeOrder);
 
 router.post("/bill-without-login/:orderId", getBillForOrder);
-
-router.post("/bills-without-login", getAllBills);
 
 module.exports = router;

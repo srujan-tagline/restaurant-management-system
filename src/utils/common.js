@@ -11,4 +11,11 @@ const hashPassword = async (password) => {
   return bcrypt.hash(password, 10);
 };
 
-module.exports = { generateToken, hashPassword };
+const response = (flag, res, statusCode, message, data) => {
+  if (flag) {
+    return res.status(statusCode).json({ message, data });
+  }
+  return res.status(statusCode).json({ message });
+};
+
+module.exports = { generateToken, hashPassword, response };

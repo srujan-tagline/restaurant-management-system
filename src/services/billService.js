@@ -48,14 +48,6 @@ const findBillsByUserId = async (userId) => {
   }
 };
 
-const findBillsByAnonymousToken = async (anonymousToken) => {
-  try {
-    return await Bill.find({ anonymousToken }).populate("orderId");
-  } catch (error) {
-    return null;
-  }
-};
-
 module.exports = {
   createBill,
   findBillById,
@@ -63,5 +55,4 @@ module.exports = {
   findBillByOrderIdAndUserId,
   findBillByOrderIdAndAnonymousToken,
   findBillsByUserId,
-  findBillsByAnonymousToken,
 };
