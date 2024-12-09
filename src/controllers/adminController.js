@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const { response } = require("../utils/common");
+const { statusCode, responseMessage } = require("../utils/constant");
 const {
   findTableByNumber,
   tableCreate,
@@ -24,17 +26,29 @@ const createTable = async (req, res) => {
     const existingTable = await findTableByNumber(number);
 
     if (existingTable) {
-      return res.status(400).json({ message: "Table number already exists." });
+      return response(
+        false,
+        res,
+        statusCode.BAD_REQUEST,
+        responseMessage.TABLE_ALREADY_EXISTS
+      );
     }
 
     const table = await tableCreate({ number });
-    return res
-      .status(201)
-      .json({ message: "Table created successfully", table });
+    return response(
+      true,
+      res,
+      statusCode.CREATED,
+      responseMessage.TABLE_CREATED
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Failed to create table", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.TABLE_CREATION_FAILED,
+      error.message
+    );
   }
 };
 
@@ -42,20 +56,39 @@ const getTableById = async (req, res) => {
   const { tableId } = req.params;
 
   if (!mongoose.isValidObjectId(tableId)) {
-    return res.status(400).json({ message: "Invalid table ID." });
+    return response(
+      false,
+      res,
+      statusCode.BAD_REQUEST,
+      responseMessage.INVALID_TABLE_ID
+    );
   }
 
   try {
     const table = await findTableById(tableId);
 
     if (!table) {
-      return res.status(404).json({ message: "Table not found" });
+      return response(
+        false,
+        res,
+        statusCode.BAD_REQUEST,
+        responseMessage.TABLE_NOT_FOUND
+      );
     }
 
-    return res.status(200).json({ message: "Table details fetched", table });
+    return response(
+      true,
+      res,
+      statusCode.SUCCESS,
+      responseMessage.TABLE_DETAILS_FETCHED
+    );
   } catch (error) {
-    console.error("Error fetching table:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.FETCHING_TABLE_DETAILS_FAILED
+    );
   }
 };
 
@@ -64,13 +97,20 @@ const createFood = async (req, res) => {
     const { name, category, price } = req.body;
 
     const food = await foodCreate({ name, category, price });
-    return res
-      .status(201)
-      .json({ message: "Food item created successfully", food });
+    return response(
+      true,
+      res,
+      statusCode.CREATED,
+      responseMessage.FOOD_CREATED
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Failed to create food item", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.FOOD_CREATION_FAILED,
+      error.message
+    );
   }
 };
 
@@ -79,16 +119,28 @@ const getAllFood = async (req, res) => {
     const foodItems = await getFoods();
 
     if (foodItems.length === 0) {
-      return res.status(404).json({ message: "No food items found." });
+      return response(
+        false,
+        res,
+        statusCode.NOT_FOUND,
+        responseMessage.FOOD_NOT_FOUND
+      );
     }
 
-    return res
-      .status(200)
-      .json({ message: "All food items retrieved successfully", foodItems });
+    return response(
+      true,
+      res,
+      statusCode.SUCCESS,
+      responseMessage.FOOD_RETRIEVED
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Failed to retrieve food items", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.FOOD_RETRIEVE_FAILED,
+      error.message
+    );
   }
 };
 
@@ -98,7 +150,12 @@ const updateFood = async (req, res) => {
     const { name, category, price } = req.body;
 
     if (!mongoose.isValidObjectId(foodId)) {
-      return res.status(400).json({ message: "Invalid food ID." });
+      return response(
+        false,
+        res,
+        statusCode.BAD_REQUEST,
+        responseMessage.INVALID_FOOD_ID
+      );
     }
 
     const food = await findFoodByIdAndUpdate(foodId, {
@@ -108,16 +165,28 @@ const updateFood = async (req, res) => {
     });
 
     if (!food) {
-      return res.status(404).json({ message: "Food item not found." });
+      return response(
+        false,
+        res,
+        statusCode.NOT_FOUND,
+        responseMessage.FOOD_NOT_FOUND
+      );
     }
 
-    return res
-      .status(200)
-      .json({ message: "Food item updated successfully", food });
+    return response(
+      true,
+      res,
+      statusCode.SUCCESS,
+      responseMessage.FOOD_UPDATED
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Failed to update food item", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.FOOD_UPDATE_FAILED,
+      error.message
+    );
   }
 };
 
@@ -126,20 +195,38 @@ const deleteFood = async (req, res) => {
     const { foodId } = req.params;
 
     if (!mongoose.isValidObjectId(foodId)) {
-      return res.status(400).json({ message: "Invalid food ID." });
+      return response(
+        false,
+        res,
+        statusCode.BAD_REQUEST,
+        responseMessage.INVALID_FOOD_ID
+      );
     }
 
     const food = await findFoodByIdAndDelete(foodId);
 
     if (!food) {
-      return res.status(404).json({ message: "Food item not found." });
+      return response(
+        false,
+        res,
+        statusCode.NOT_FOUND,
+        responseMessage.FOOD_NOT_FOUND
+      );
     }
 
-    return res.status(200).json({ message: "Food item deleted successfully" });
+    return response(
+      true,
+      res,
+      statusCode.SUCCESS,
+      responseMessage.FOOD_DELETED
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Failed to delete food item", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.FOOD_DELETE_FAILED
+    );
   }
 };
 
@@ -149,13 +236,23 @@ const manageOrder = async (req, res) => {
     const { status } = req.body;
 
     if (!mongoose.isValidObjectId(orderId)) {
-      return res.status(400).json({ message: "Invalid order ID." });
+      return response(
+        false,
+        res,
+        statusCode.BAD_REQUEST,
+        responseMessage.INVALID_ORDER_ID
+      );
     }
 
     const order = await findOrderByIdAndUpdate(orderId, { status });
 
     if (!order) {
-      return res.status(404).json({ message: "Order not found." });
+      return response(
+        false,
+        res,
+        statusCode.NOT_FOUND,
+        responseMessage.ORDER_NOT_FOUND
+      );
     }
 
     if (status === "accepted") {
@@ -179,9 +276,13 @@ const manageOrder = async (req, res) => {
     }
     return res.status(200).json({ message: `Order ${status}`, order });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Failed to manage order", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.MANAGE_ORDER_FAILED,
+      error.message
+    );
   }
 };
 
@@ -190,22 +291,38 @@ const getBillById = async (req, res) => {
     const { billId } = req.params;
 
     if (!mongoose.isValidObjectId(billId)) {
-      return res.status(400).json({ message: "Invalid bill ID." });
+      return response(
+        false,
+        res,
+        statusCode.BAD_REQUEST,
+        responseMessage.INVALID_BILL_ID
+      );
     }
 
     const bill = await findBillById(billId);
 
     if (!bill) {
-      return res.status(404).json({ message: "Bill not found." });
+      return response(
+        false,
+        res,
+        statusCode.NOT_FOUND,
+        responseMessage.BILL_NOT_FOUND
+      );
     }
 
-    return res
-      .status(200)
-      .json({ message: "Bill retrieved successfully", bill });
+    return response(
+      true,
+      res,
+      statusCode.SUCCESS,
+      responseMessage.BILL_RETRIEVED
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Failed to retrieve bill", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.BILL_RETRIEVE_FAILED
+    );
   }
 };
 
@@ -214,16 +331,27 @@ const getAllBills = async (req, res) => {
     const bills = await findAllBills();
 
     if (bills.length === 0) {
-      return res.status(404).json({ message: "No bills found." });
+      return response(
+        false,
+        res,
+        statusCode.NOT_FOUND,
+        responseMessage.BILLS_NOT_FOUND
+      );
     }
 
-    return res
-      .status(200)
-      .json({ message: "All bills retrieved successfully", bills });
+    return response(
+      true,
+      res,
+      statusCode.SUCCESS,
+      responseMessage.BILLS_RETRIEVED
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Failed to retrieve bills", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.BILLS_RETRIEVE_FAILED
+    );
   }
 };
 

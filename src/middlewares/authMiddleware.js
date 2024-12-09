@@ -1,32 +1,42 @@
+const { response } = require("../utils/common");
+const { statusCode, responseMessage } = require("../utils/constant");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 
 const authenticateUser = async (req, res, next) => {
   const token = req.header("Authorization")?.replace("Bearer ", "");
   if (!token) {
-    return res.status(401).json({ message: "Please login to continue." });
+    return response(
+      false,
+      res,
+      statusCode.UNAUTHORIZED,
+      responseMessage.UNAUTHENTICATED
+    );
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // if (decoded.purpose !== "login") {
-    //   return response(
-    //     false,
-    //     res,
-    //     statusCode.FORBIDDEN,
-    //     responseMessage.INVALID_TOKEN_FOR_ACTION
-    //   );
-    // }
 
     const user = await User.findById(decoded.id);
     if (!user) {
-      return res.status(404).json({ message: "User is not found." });
+      return response(
+        false,
+        res,
+        statusCode.NOT_FOUND,
+        responseMessage.USER_NOT_FOUND
+      );
     }
 
     req.user = user;
     next();
   } catch (err) {
-    return res.status(401).json({ message: "Invalid or expired token" });
+    // return res.status(401).json({ message: "Invalid or expired token" });
+    return response(
+      false,
+      res,
+      statusCode.UNAUTHORIZED,
+      responseMessage.INVALID_TOKEN
+    );
   }
 };
 

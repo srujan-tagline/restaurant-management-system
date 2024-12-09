@@ -1,5 +1,7 @@
 const { v4: uuidv4 } = require("uuid");
 const mongoose = require("mongoose");
+const { response } = require("../utils/common");
+const { statusCode, responseMessage } = require("../utils/constant");
 const {
   incrementFoodPopularity,
   retrieveFoodByPopularity,
@@ -20,13 +22,21 @@ const {
 const getFoodByPopularity = async (req, res) => {
   try {
     const foodItems = await retrieveFoodByPopularity();
-    return res
-      .status(200)
-      .json({ message: "Food list retrieved based on popularity", foodItems });
+    return response(
+      true,
+      res,
+      statusCode.SUCCESS,
+      responseMessage.POPULAR_FOOD_LIST,
+      foodItems
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Failed to retrieve food items", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.FOOD_RETRIEVE_FAILED,
+      error.message
+    );
   }
 };
 
@@ -34,13 +44,21 @@ const getFoodByCategory = async (req, res) => {
   try {
     const foodItems = await retrieveFoodByCategory();
 
-    return res
-      .status(200)
-      .json({ message: "Food items grouped by category", foodItems });
+    return response(
+      true,
+      res,
+      statusCode.SUCCESS,
+      responseMessage.CATEGORY_FOOD_LIST,
+      foodItems
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Failed to retrieve food items", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.FOOD_RETRIEVE_FAILED,
+      error.message
+    );
   }
 };
 
@@ -52,21 +70,32 @@ const placeOrder = async (req, res) => {
 
     const table = await findTableByNumber(tableNumber);
     if (!table) {
-      return res.status(404).json({ message: "Table is not found." });
+      return response(
+        false,
+        res,
+        statusCode.NOT_FOUND,
+        responseMessage.TABLE_NOT_FOUND
+      );
     }
 
     if (table.currentOrder) {
-      return res
-        .status(400)
-        .json({ message: "Table already has a pending order." });
+      return response(
+        false,
+        res,
+        statusCode.BAD_REQUEST,
+        responseMessage.TABLE_HAS_PENDING_ORDER
+      );
     }
 
     const foodItems = await findFoodByIds(items.map((item) => item.foodId));
 
     if (foodItems.length !== items.length) {
-      return res
-        .status(400)
-        .json({ message: "Order contain invalid food items." });
+      return response(
+        false,
+        res,
+        statusCode.BAD_REQUEST,
+        responseMessage.ORDER_CONTAIN_INVALID_FOOD
+      );
     }
 
     const order = await createOrder({
@@ -87,13 +116,20 @@ const placeOrder = async (req, res) => {
       await incrementFoodPopularity(item.foodId, item.quantity);
     }
 
-    return res
-      .status(201)
-      .json({ message: "Order placed successfully", order });
+    return response(
+      true,
+      res,
+      statusCode.CREATED,
+      responseMessage.ORDER_PLACED,
+      order
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Failed to place order", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.ORDER_PLACED_FAILED
+    );
   }
 };
 
@@ -104,7 +140,12 @@ const getBillForOrder = async (req, res) => {
     const userId = req?.user?._id;
 
     if (!mongoose.isValidObjectId(orderId)) {
-      return res.status(400).json({ message: "Invalid order ID" });
+      return response(
+        false,
+        res,
+        statusCode.BAD_REQUEST,
+        responseMessage.INVALID_ORDER_ID
+      );
     }
 
     if (userId) {
@@ -117,18 +158,29 @@ const getBillForOrder = async (req, res) => {
     }
 
     if (!bill) {
-      return res
-        .status(404)
-        .json({ message: "Bill is not found for this order" });
+      return response(
+        false,
+        res,
+        statusCode.NOT_FOUND,
+        responseMessage.BILL_NOT_FOUND_FOR_ORDER
+      );
     }
 
-    return res
-      .status(200)
-      .json({ message: "Bill retrieved successfully", bill });
+    return response(
+      true,
+      res,
+      statusCode.SUCCESS,
+      responseMessage.BILL_RETRIEVED,
+      bill
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Failed to retrieve bill", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.BILL_RETRIEVE_FAILED,
+      error.message
+    );
   }
 };
 
@@ -137,7 +189,12 @@ const getAllBills = async (req, res) => {
     const bills = await findBillsByUserId(req.user._id);
 
     if (!bills.length) {
-      return res.status(404).json({ message: "No bills found for this user" });
+      return response(
+        false,
+        res,
+        statusCode.NOT_FOUND,
+        responseMessage.BILLS_NOT_FOUND_FOR_USER
+      );
     }
 
     const totalAmount = bills.reduce((sum, bill) => sum + bill.totalAmount, 0);
@@ -148,10 +205,13 @@ const getAllBills = async (req, res) => {
       bills,
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Error retrieving bills",
-      error: error.message,
-    });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.BILLS_RETRIEVE_FAILED,
+      error.message
+    );
   }
 };
 

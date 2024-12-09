@@ -1,4 +1,5 @@
-const { generateToken, hashPassword } = require("../utils/common");
+const { generateToken, hashPassword, response } = require("../utils/common");
+const { statusCode, responseMessage } = require("../utils/constant");
 const sendEmail = require("../utils/sendEmail");
 const {
   findUserByEmail,
@@ -23,14 +24,20 @@ const signup = async (req, res) => {
         existingUser.otpExpiresAt = otpExpiresAt;
         await saveUser(existingUser);
 
-        return res.status(403).json({
-          message: "Verification email sent. Please verify your self.",
-        });
+        return response(
+          false,
+          res,
+          statusCode.FORBIDDEN,
+          responseMessage.VERIFY_EMAIL_SENT
+        );
       }
 
-      return res
-        .status(400)
-        .json({ message: "Email is already in use by other account." });
+      return response(
+        false,
+        res,
+        statusCode.BAD_REQUEST,
+        responseMessage.EMAIL_ALREADY_USE
+      );
     }
 
     const hashedPassword = await hashPassword(password);
@@ -48,14 +55,20 @@ const signup = async (req, res) => {
 
     await sendEmail(email, "OTP Verification", `Your OTP is: ${otp}`);
 
-    return res.status(201).json({
-      message:
-        "Signup successful. Please verify your self using the OTP sent to the provided email.",
-    });
+    return response(
+      true,
+      res,
+      statusCode.CREATED,
+      responseMessage.SIGNUP_SUCCESSFUL
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Signup failed", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.SIGNUP_FAILED,
+      error.message
+    );
   }
 };
 
@@ -65,13 +78,15 @@ const login = async (req, res) => {
 
     const user = await findUserByEmail(email);
     if (!user) {
-      return res
-        .status(404)
-        .json({ message: "Invalid email. Please provide correct email." });
+      return response(
+        false,
+        res,
+        statusCode.NOT_FOUND,
+        responseMessage.INVALID_EMAIL
+      );
     }
 
     if (!user.isVerified) {
-      // return res.status(400).json({message: "You are not verified. Please verify your self."});
       const otp = generateOTP();
       const otpExpiresAt = generateOTPExpiry();
 
@@ -80,23 +95,40 @@ const login = async (req, res) => {
       user.otpExpiresAt = otpExpiresAt;
       await saveUser(user);
 
-      return res.status(403).json({
-        message:
-          "You are not verified. Verification email sent. Please verify your self.",
-      });
+      return response(
+        false,
+        res,
+        statusCode.FORBIDDEN,
+        responseMessage.NOT_VERIFIED_VERIFICATION_EMAIL_SENT
+      );
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return response(
+        false,
+        res,
+        statusCode.UNAUTHORIZED,
+        responseMessage.INVALID_PASSWORD
+      );
     }
 
     const token = generateToken({ email: email, id: user._id }, "1d");
-    return res.status(200).json({ message: "Login successful", token });
+    return response(
+      true,
+      res,
+      statusCode.SUCCESS,
+      responseMessage.LOGIN_SUCCESSFUL,
+      token
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Error during login", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.LOGIN_FAILED,
+      error.message
+    );
   }
 };
 
@@ -105,21 +137,39 @@ const verifyOTP = async (req, res) => {
   try {
     const user = await findUserByEmail(email);
     if (!user) {
-      return res.status(404).json({ message: "User is not found" });
+      return response(
+        false,
+        res,
+        statusCode.NOT_FOUND,
+        responseMessage.USER_NOT_FOUND
+      );
     }
 
     if (user.isVerified) {
-      return res.status(400).json({ message: "User is already verified" });
+      return response(
+        false,
+        res,
+        statusCode.BAD_REQUEST,
+        responseMessage.USER_ALREADY_VERIFIED
+      );
     }
 
     if (user.otp !== otp) {
-      return res.status(400).json({ message: "Invalid OTP" });
+      return response(
+        false,
+        res,
+        statusCode.BAD_REQUEST,
+        responseMessage.INVALID_OTP
+      );
     }
 
     if (user.otpExpiresAt < Date.now()) {
-      return res
-        .status(400)
-        .json({ message: "OTP expired. Please try again." });
+      return response(
+        false,
+        res,
+        statusCode.BAD_REQUEST,
+        responseMessage.OTP_EXPIRED
+      );
     }
 
     user.isVerified = true;
@@ -127,11 +177,20 @@ const verifyOTP = async (req, res) => {
     user.otpExpiresAt = null;
     await saveUser(user);
 
-    return res.status(200).json({ message: "User verified successfully" });
+    return response(
+      true,
+      res,
+      statusCode.SUCCESS,
+      responseMessage.USER_VERIFIED
+    );
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "OTP verification failed", error: error.message });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.OTP_VERIFICATION_FAILED,
+      error.message
+    );
   }
 };
 
@@ -141,14 +200,19 @@ const googleCallback = async (req, res) => {
     const user = req.user;
 
     const token = generateToken({ email: user.email, id: user._id }, "1d");
-    return res
-      .status(200)
-      .json({ message: "Google authentication successful", token });
+    return response(
+      true,
+      res,
+      statusCode.SUCCESS,
+      responseMessage.GOOGLE_AUTHENTICATION_SUCCESSFUL
+    );
   } catch (error) {
-    return res.status(500).json({
-      message: "Error during Google OAuth callback",
-      error: error.message,
-    });
+    return response(
+      false,
+      res,
+      statusCode.INTERNAL_SERVER_ERROR,
+      responseMessage.GOOGLE_AUTHENTICATION_FAILED
+    );
   }
 };
 
